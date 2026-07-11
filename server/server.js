@@ -27,15 +27,9 @@ function fillTemplate(template, values) {
     });
 }
 
-io.on('connection', (socket) => {
-  console.log('A user connected');
-
-  socket.on('sendtext', (msg) => {
-    console.log(msg);
-    const servIP = server.address().address;
-    response = `${msg} recieved on ${servIP}`;
-    io.emit('newText', response);
-  });
+io.on('connection', function (socket) {
+  const ClientIP = socket.request.connection.remoteAddress;
+  console.log('A user connected from IP ' + ClientIP);
 
   socket.on('sendprompt', (data) => {
     console.log(data);
@@ -53,7 +47,7 @@ io.on('connection', (socket) => {
   })
 
   socket.on('disconnect', () => {
-    console.log('A user disconnected');
+    console.log('A user from port ' + ClientIP + ' disconnected');
   });
 });
 

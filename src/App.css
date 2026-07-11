@@ -5,8 +5,9 @@
 .TopBar {
   background-color: #4CAF50;
   height: 10%;
-  font-size: large;
+  font-size: x-large;
   margin: 0;
+  padding: 0.5%;
 }
 
 .TopBar p {
@@ -25,13 +26,42 @@
   margin: 2% 4%;
   border-radius: 10px;
   resize: none;
+  background-color: lightgray;
+  font-size: x-large;
+}
+
+.textAreaInactive {
+  width: 40%;
+  height: 30%;
+  margin: 2% 4%;
+  border-radius: 10px;
+  resize: none;
+  background-color: gray;
+  font-size: x-large;
+}
+
+#outputArea {
+  cursor: default;
 }
 
 .LangSelector {
   width: 20%;
   margin: 1% 15%;
+  cursor: pointer;
 }
 
-button {
+.sendButt {
+  padding: 5px 10px;
   margin: 1%;
+  border-radius: 10px;
+  background-color: aqua;
+  cursor: pointer;
+}
+
+.sendButtInactive {
+  padding: 5px 10px;
+  margin: 1%;
+  border-radius: 10px;
+  background-color: crimson;
+  color: white;
 }
