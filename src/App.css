@@ -4,7 +4,7 @@
 
 .TopBar {
   background-color: #4CAF50;
-  height: 10%;
+  max-height: 10%;
   font-size: x-large;
   margin: 0;
   padding: 0.5%;
@@ -14,10 +14,21 @@
   margin: 0;
 }
 
+#SettingsButt {
+  aspect-ratio: 1;
+  height: 50%;
+  background-color: transparent;
+  border: none;
+}
+
 .MainPart {
   background-color: blue;
   height: 90%;
   margin: 0;
+}
+
+.MainPart .MainPage {
+  height: 100%;
 }
 
 .textArea {
@@ -64,4 +75,46 @@
   border-radius: 10px;
   background-color: crimson;
   color: white;
+}
+
+.MainPart .SettingsPage {
+  background-color: chocolate;
+  margin: 0;
+}
+
+.SettingsPage .SettingsArea {
+  padding: 2% 5%;
+  text-align: left;
+}
+
+.SettingsArea .SectionHeader {
+  font-size: x-large;
+  font-weight: 500;
+  text-align: left;
+  margin: 1% 0;
+}
+
+.SettingsArea .InputField {
+  width: 35%;
+  height: 15px;
+  font-size: larger;
+  border-radius: 8px;
+  padding: 5px;
+  margin: 10px 50% 10px 0;
+  resize: none;
+}
+
+.SettingsPage .SaveArea {
+  width: 100%;
+  text-align: center;
+  background-color: aqua;
+  padding: 1% 0;
+}
+
+.SaveArea .SaveButton {
+  width: 10%;
+  font-size: large;
+  background-color: blueviolet;
+  aspect-ratio: 4;
+  border-radius: 10px;
 }

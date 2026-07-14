@@ -1,6 +1,7 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import './App.css';
 import io from 'socket.io-client';
+import SettingsIcon from './images/SettingsIconLowRes.png'
 
 const serverURL = `${window.location.protocol}//${window.location.hostname}:3001`;
 const socket = io(serverURL);
@@ -59,6 +60,11 @@ async function sendText() {
   return;
 }
 
+async function sendConfig(conf) {
+  socket.emit('updateConfig', conf);
+  return;
+}
+
 function flipInputState(MustBeReadonly){
   document.getElementById(inputAreaId).className = MustBeReadonly ? "textAreaInactive" : "textArea";
   document.getElementById(inputAreaId).readOnly = MustBeReadonly;
@@ -80,16 +86,42 @@ function updateOutputArea(text) {
 }
 
 function App() {
+  const [page, setPage] = useState('main');
+  const [config, setConfig] = useState([]);
+
   useEffect(() => {
     socket.on('newText', updateOutputArea);
+    socket.on('sendConfig', (conf) => {
+      setConfig(prev => conf);
+      console.log(config);
+    });
   })
 
-  return (
-    <div className="App">
-      <div className="TopBar">
-        <p>Dicker.Translate</p>
-      </div>
-      <div className="MainPart">
+  function ChangePage() {
+    if(page === 'main'){
+      setPage(prev => 'settings');
+    } else {
+      setPage(prev => 'main');
+    }
+  }
+
+  function SaveConfig() {
+    const NewIP = document.getElementById('IPInput').value;
+    const NewPort = document.getElementById('PortInput').value;
+
+    var newConf = config;
+    newConf[0].Connection.IP = NewIP;
+    newConf[0].Connection.Port = NewPort;
+
+    setConfig(prev => newConf);
+    console.log(config);
+
+    sendConfig(config);
+  }
+
+  function MainPage() {
+    return (
+      <div className="MainPage">
         <select className='LangSelector' id='InLang'>
           {LanguageOptions.map(languageOption =>
             <option 
@@ -122,6 +154,52 @@ function App() {
             console.log("Text sent successfully");
           })
         }}>TRANSLATE</button>
+      </div>
+    )
+  }
+
+  function Settings() {
+    return (
+      <div className='SettingsPage'>
+        <div className='SettingsArea'>
+          <p className='SectionHeader'>Ollama connection</p>
+          <textarea 
+            className='InputField'
+            id='IPInput'
+            placeholder='IP of Ollama server. Leave empty for default (localhost)'
+            defaultValue={config[0].Connection.IP}>
+          </textarea>
+          <textarea 
+            className='InputField'
+            id='PortInput'
+            placeholder='Port of Ollama on your server. Leave empty for default (11434)'
+            defaultValue={config[0].Connection.Port}>
+          </textarea>
+        </div>
+        <div className='SaveArea'>
+          <button 
+            className='SaveButton'
+            onClick={SaveConfig}>
+            Save
+          </button>
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <div className="App">
+      <title>Dicker.translate</title>
+      <div className="TopBar">
+        <p>Dicker.Translate</p>
+        <button id='SettingsButt'
+        onClick={() => ChangePage()}>
+          <img src={SettingsIcon} alt='SettingsIcon'></img>
+        </button>
+      </div>
+      <div className='MainPart'>
+        {page === 'main' ? MainPage() :
+        Settings()}
       </div>
     </div>
   );
