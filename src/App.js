@@ -87,15 +87,34 @@ function updateOutputArea(text) {
 
 function App() {
   const [page, setPage] = useState('main');
-  const [config, setConfig] = useState([]);
+  const [config, setConfig] = useState(null);
+  const [InLang, setInLang] = useState('');
+  const [OutLang, setOutLang] = useState('');
 
   useEffect(() => {
     socket.on('newText', updateOutputArea);
-    socket.on('sendConfig', (conf) => {
+    async function getConfig() {
+      const conf = await socket.emitWithAck('getConfig');
       setConfig(prev => conf);
+      setInLang(prev => conf.Languages.DefInLang);
+      setOutLang(prev => conf.Languages.DefOutLang);
+    }
+
+    if(!config){
+      getConfig();
       console.log(config);
-    });
-  })
+    }
+
+  }, [config]);
+
+  if(!config) {
+    console.log(config);
+    return (
+      <div>
+        <p>Loading</p>
+      </div>
+    )
+  };
 
   function ChangePage() {
     if(page === 'main'){
@@ -108,10 +127,16 @@ function App() {
   function SaveConfig() {
     const NewIP = document.getElementById('IPInput').value;
     const NewPort = document.getElementById('PortInput').value;
+    const NewLocal = document.getElementById('LocalizationSelector').value;
+    const NewDefInLang = document.getElementById('InputLangSelector').value;
+    const NewdefOutLang = document.getElementById('OutputLangSelector').value;
 
     var newConf = config;
-    newConf[0].Connection.IP = NewIP;
-    newConf[0].Connection.Port = NewPort;
+    newConf.Connection.IP = NewIP;
+    newConf.Connection.Port = NewPort;
+    newConf.Languages.Local = NewLocal;
+    newConf.Languages.DefInLang = NewDefInLang;
+    newConf.Languages.DefOutLang = NewdefOutLang;
 
     setConfig(prev => newConf);
     console.log(config);
@@ -122,7 +147,11 @@ function App() {
   function MainPage() {
     return (
       <div className="MainPage">
-        <select className='LangSelector' id='InLang'>
+        <select 
+          className='LangSelector' 
+          id='InLang'
+          value={InLang}
+          onChange={(e) => setInLang(e.target.value)}>
           {LanguageOptions.map(languageOption =>
             <option 
               key={languageOption.tag} 
@@ -130,7 +159,11 @@ function App() {
             >{languageOption.full}</option>
           )}
         </select>
-        <select className='LangSelector' id='OutLang'>
+        <select 
+          className='LangSelector' 
+          id='OutLang'
+          value={OutLang}
+          onChange={(e) => setOutLang(e.target.value)}>
           {LanguageOptions.map(languageOption =>
             <option 
               key={languageOption.tag} 
@@ -159,6 +192,7 @@ function App() {
   }
 
   function Settings() {
+    try {
     return (
       <div className='SettingsPage'>
         <div className='SettingsArea'>
@@ -167,14 +201,48 @@ function App() {
             className='InputField'
             id='IPInput'
             placeholder='IP of Ollama server. Leave empty for default (localhost)'
-            defaultValue={config[0].Connection.IP}>
+            defaultValue={config.Connection.IP}>
           </textarea>
           <textarea 
             className='InputField'
             id='PortInput'
             placeholder='Port of Ollama on your server. Leave empty for default (11434)'
-            defaultValue={config[0].Connection.Port}>
+            defaultValue={config.Connection.Port}>
           </textarea>
+          <p className='SectionHeader'>Language preferences</p>
+          <p className='SectionSubHeader'>Interface language (work in progress)</p>
+          <select className='LangPrefSelector'
+            id='LocalizationSelector'
+            defaultValue={config.Languages.Local}>
+            {LanguageOptions.map(languageOption =>
+              <option 
+                key={languageOption.tag} 
+                value={languageOption.full}
+              >{languageOption.full}</option>
+            )}
+          </select>
+          <p className='SectionSubHeader'>Default input language</p>
+          <select className='LangPrefSelector'
+            id='InputLangSelector'
+            defaultValue={config.Languages.DefInLang}>
+            {LanguageOptions.map(languageOption =>
+              <option 
+                key={languageOption.tag} 
+                value={languageOption.full}
+              >{languageOption.full}</option>
+            )}
+          </select>
+          <p className='SectionSubHeader'>Default output language</p>
+          <select className='LangPrefSelector'
+            id='OutputLangSelector'
+            defaultValue={config.Languages.DefOutLang}>
+            {LanguageOptions.map(languageOption =>
+              <option 
+                key={languageOption.tag} 
+                value={languageOption.full}
+              >{languageOption.full}</option>
+            )}
+          </select>
         </div>
         <div className='SaveArea'>
           <button 
@@ -185,17 +253,25 @@ function App() {
         </div>
       </div>
     )
+  } catch (error) {
+    console.log(error);
+  }
   }
 
   return (
     <div className="App">
       <title>Dicker.translate</title>
       <div className="TopBar">
-        <p>Dicker.Translate</p>
-        <button id='SettingsButt'
-        onClick={() => ChangePage()}>
-          <img src={SettingsIcon} alt='SettingsIcon'></img>
-        </button>
+        <div className='LeftPart'>HUI</div>
+        <div className='CentralPart'>
+          <div className='SiteName'>Dicker.Translate</div>
+        </div>
+        <div className='RightPart'>
+          <button id='SettingsButt'
+          onClick={() => ChangePage()}>
+            <img src={SettingsIcon} alt='SettingsIcon'></img>
+          </button>
+        </div>
       </div>
       <div className='MainPart'>
         {page === 'main' ? MainPage() :

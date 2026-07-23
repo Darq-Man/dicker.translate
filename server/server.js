@@ -1,3 +1,4 @@
+//Import from libraries
 const fs = require('fs');
 const path = require('path');
 const os = require('os');
@@ -7,6 +8,7 @@ const http = require('http');
 const { Server } = require('socket.io');
 const { Ollama } = require("ollama");
 
+//Creating a express server and Socket
 const app = express();
 const server = http.createServer(app);
 
@@ -17,6 +19,7 @@ const io = new Server(server, {
     }
 });
 
+//Checking current OS server is running on
 const CurrentOS = process.platform;
 console.log(CurrentOS);
 var ConfigDirectory = '';
@@ -33,15 +36,22 @@ switch (CurrentOS) {
     break;
 }
 
-var Config = [
-  {
-    "Connection": {
-      "IP": "localhost",
-      "Port": "11434"
-    }
+//Creating config variable
+var Config = {
+  "Connection": {
+    "IP": "localhost",
+    "Port": "11434"
+  },
+  "Languages": {
+    "Local": "English",
+    "DefInLang": "English",
+    "DefInLangKey": "(en)",
+    "DefOutLang": "Ukrainian",
+    "DefOutLangKey": "(uk)"
   }
-]
+}
 
+//Working with config file in filesystem
 if (!fs.existsSync(ConfigDirectory)) {
   fs.mkdirSync(ConfigDirectory, {recursive: true});
   fs.writeFileSync(ConfigLocation, JSON.stringify(Config));
@@ -52,7 +62,8 @@ if (!fs.existsSync(ConfigDirectory)) {
   console.log(Config);
 }
 
-var ollamaHost = `http://${Config[0].Connection.IP}:${Config[0].Connection.Port}`;
+//Setting up Ollama
+var ollamaHost = `http://${Config.Connection.IP}:${Config.Connection.Port}`;
 var ollama = new Ollama({host: ollamaHost});
 console.log(ollamaHost);
 const PromptTemplate = `You are a professional {InputLang} {InputLangID} to {OutputLang} {OutputLangID} translator. Your goal is to accurately convey the meaning and nuances of the original {InputLang} text while adhering to {OutputLang} grammar, vocabulary, and cultural sensitivities.
@@ -67,15 +78,22 @@ function fillTemplate(template, values) {
     });
 }
 
+var ConnectedClients = [];
+
+//Setting up Socket actions
 io.on('connection', function (socket) {
   const ClientIP = socket.request.connection.remoteAddress;
+  ConnectedClients.push(ClientIP);
   console.log('A user connected from IP ' + ClientIP);
+  console.log('Connected devices: ' + ConnectedClients.length);
 
-  socket.emit('sendConfig', Config);
+  socket.on('getConfig', (callback) => {
+    callback(Config);
+  });
 
   socket.on('updateConfig', (conf) => {
     Config = conf;
-    ollamaHost = `http://${Config[0].Connection.IP}:${Config[0].Connection.Port}`;
+    ollamaHost = `http://${Config.Connection.IP}:${Config.Connection.Port}`;
     ollama = new Ollama({host: ollamaHost});
     fs.writeFileSync(ConfigLocation, JSON.stringify(Config));
     console.log(Config);
@@ -97,11 +115,13 @@ io.on('connection', function (socket) {
   });
 
   socket.on('disconnect', () => {
+    const res = ConnectedClients.indexOf(ClientIP);
+    ConnectedClients.splice(res, 1);
     console.log('A user from port ' + ClientIP + ' disconnected');
   });
 });
 
-
+//Opening port 3001 for listening
 server.listen(3001, () => {
   console.log("Server is running on port 3001");
 });

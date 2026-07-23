@@ -4,21 +4,49 @@
 
 .TopBar {
   background-color: #4CAF50;
-  max-height: 10%;
+  max-height: 50px;
   font-size: x-large;
   margin: 0;
   padding: 0.5%;
+  display: flex;
 }
 
-.TopBar p {
-  margin: 0;
+.TopBar .LeftPart {
+  text-align: left;
+  width: 25%;
+  height: 50px;
+  color: transparent;
 }
 
-#SettingsButt {
+.TopBar .CentralPart {
+  text-align: center;
+  width: 50%;
+  height: 50px;
+}
+
+.TopBar .RightPart {
+  text-align: right;
+  width: 25%;
+  height: 50px;
+}
+
+.CentralPart .SiteName {
+  width: 100%;
+  padding: 10px;
+  vertical-align: middle;
+}
+
+.RightPart #SettingsButt {
+  display: inline-block;
   aspect-ratio: 1;
-  height: 50%;
+  height: 50px;
   background-color: transparent;
   border: none;
+  padding: 0;
+}
+
+#SettingsButt img {
+  height: 100%
 }
 
 .MainPart {
@@ -94,14 +122,28 @@
   margin: 1% 0;
 }
 
+.SettingsArea .SectionSubHeader {
+  font-size: large;
+  text-align: left;
+  margin: 1% 0;
+}
+
 .SettingsArea .InputField {
   width: 35%;
-  height: 15px;
+  height: 20px;
   font-size: larger;
   border-radius: 8px;
   padding: 5px;
   margin: 10px 50% 10px 0;
   resize: none;
+}
+
+.SettingsPage .LangPrefSelector {
+  width: 20%;
+  height: 30px;
+  border-radius: 8px;
+  margin: 0;
+  cursor: pointer;
 }
 
 .SettingsPage .SaveArea {
