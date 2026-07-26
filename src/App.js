@@ -16,6 +16,11 @@ const LanguageOptions = [
   {full: 'German', tag: '(de)'}
 ];
 
+const LocalOptions = [
+  {full: 'English'},
+  {full: 'Ukrainian'}
+];
+
 function clearOutputField() {
   const inputAreaElem = document.getElementById(inputAreaId);
   const outputAreaElem = document.getElementById(OutputAreaId);
@@ -60,18 +65,12 @@ async function sendText() {
   return;
 }
 
-async function sendConfig(conf) {
-  socket.emit('updateConfig', conf);
-  return;
-}
-
 function flipInputState(MustBeReadonly){
   document.getElementById(inputAreaId).className = MustBeReadonly ? "textAreaInactive" : "textArea";
   document.getElementById(inputAreaId).readOnly = MustBeReadonly;
   document.getElementById("sendButt").className = MustBeReadonly ? "sendButtInactive" : "sendButt";
   document.getElementById("sendButt").disabled = MustBeReadonly;
 }
-
 
 function updateOutputArea(text) {
   flipInputState(false);
@@ -88,6 +87,7 @@ function updateOutputArea(text) {
 function App() {
   const [page, setPage] = useState('main');
   const [config, setConfig] = useState(null);
+  const [Local, setLocal] = useState(null);
   const [InLang, setInLang] = useState('');
   const [OutLang, setOutLang] = useState('');
 
@@ -100,14 +100,19 @@ function App() {
       setOutLang(prev => conf.Languages.DefOutLang);
     }
 
-    if(!config){
-      getConfig();
-      console.log(config);
+    async function getLocal() {
+      const local = await socket.emitWithAck('getLocal');
+      setLocal(prev => local);
     }
 
-  }, [config]);
+    if(!config){
+      getConfig();
+      getLocal();
+    }
 
-  if(!config) {
+  }, [config, Local]);
+
+  if(!config || !Local) {
     console.log(config);
     return (
       <div>
@@ -115,6 +120,13 @@ function App() {
       </div>
     )
   };
+
+  async function sendConfig(conf) {
+    const newLocal = await socket.emitWithAck('updateConfig', conf);
+    console.log(newLocal);
+    setLocal(prev => newLocal);
+    return;
+  }
 
   function ChangePage() {
     if(page === 'main'){
@@ -183,10 +195,11 @@ function App() {
         <button 
           className='sendButt' 
           id='sendButt'
+          value={Local.Interactions.Translate}
           onClick={() => {sendText().then(result => {
             console.log("Text sent successfully");
           })
-        }}>TRANSLATE</button>
+        }}>{Local.Interactions.Translate}</button>
       </div>
     )
   }
@@ -196,32 +209,31 @@ function App() {
     return (
       <div className='SettingsPage'>
         <div className='SettingsArea'>
-          <p className='SectionHeader'>Ollama connection</p>
+          <p className='SectionHeader'>{Local.Interface.Headers.OllConn}</p>
           <textarea 
             className='InputField'
             id='IPInput'
-            placeholder='IP of Ollama server. Leave empty for default (localhost)'
+            placeholder={Local.Interface.Headers.IPPlaceholder}
             defaultValue={config.Connection.IP}>
           </textarea>
           <textarea 
             className='InputField'
             id='PortInput'
-            placeholder='Port of Ollama on your server. Leave empty for default (11434)'
+            placeholder={Local.Interface.Headers.PortPlaceholder}
             defaultValue={config.Connection.Port}>
           </textarea>
-          <p className='SectionHeader'>Language preferences</p>
-          <p className='SectionSubHeader'>Interface language (work in progress)</p>
+          <p className='SectionHeader'>{Local.Interface.Headers.LangPref}</p>
+          <p className='SectionSubHeader'>{Local.Interface.Headers.IntPref}</p>
           <select className='LangPrefSelector'
             id='LocalizationSelector'
             defaultValue={config.Languages.Local}>
-            {LanguageOptions.map(languageOption =>
+            {LocalOptions.map(LocalOption =>
               <option 
-                key={languageOption.tag} 
-                value={languageOption.full}
-              >{languageOption.full}</option>
+                value={LocalOption.full}
+              >{LocalOption.full}</option>
             )}
           </select>
-          <p className='SectionSubHeader'>Default input language</p>
+          <p className='SectionSubHeader'>{Local.Interface.Headers.DefInLang}</p>
           <select className='LangPrefSelector'
             id='InputLangSelector'
             defaultValue={config.Languages.DefInLang}>
@@ -232,7 +244,7 @@ function App() {
               >{languageOption.full}</option>
             )}
           </select>
-          <p className='SectionSubHeader'>Default output language</p>
+          <p className='SectionSubHeader'>{Local.Interface.Headers.DefOutLang}</p>
           <select className='LangPrefSelector'
             id='OutputLangSelector'
             defaultValue={config.Languages.DefOutLang}>
@@ -248,7 +260,7 @@ function App() {
           <button 
             className='SaveButton'
             onClick={SaveConfig}>
-            Save
+            {Local.Interactions.Save}
           </button>
         </div>
       </div>

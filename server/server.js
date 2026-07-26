@@ -59,13 +59,11 @@ if (!fs.existsSync(ConfigDirectory)) {
   fs.writeFileSync(ConfigLocation, JSON.stringify(Config));
 } else {
   Config = JSON.parse(fs.readFileSync(ConfigLocation));
-  console.log(Config);
 }
 
 //Setting up Ollama
 var ollamaHost = `http://${Config.Connection.IP}:${Config.Connection.Port}`;
 var ollama = new Ollama({host: ollamaHost});
-console.log(ollamaHost);
 const PromptTemplate = `You are a professional {InputLang} {InputLangID} to {OutputLang} {OutputLangID} translator. Your goal is to accurately convey the meaning and nuances of the original {InputLang} text while adhering to {OutputLang} grammar, vocabulary, and cultural sensitivities.
 Produce only the {OutputLang} translation, without any additional explanations or commentary. Please translate the following {InputLang} text into {OutputLang}:
 
@@ -79,6 +77,7 @@ function fillTemplate(template, values) {
 }
 
 var ConnectedClients = [];
+var Local = {};
 
 //Setting up Socket actions
 io.on('connection', function (socket) {
@@ -91,19 +90,26 @@ io.on('connection', function (socket) {
     callback(Config);
   });
 
-  socket.on('updateConfig', (conf) => {
+  socket.on('getLocal', (callback) => {
+    const LocalLocation = './Files/DickerLocals.json';
+    Local = JSON.parse(fs.readFileSync(LocalLocation));
+    const CurLocalLang = Config.Languages.Local;
+    callback(Local[CurLocalLang]);
+  })
+
+  socket.on('updateConfig', (conf, callback) => {
     Config = conf;
     ollamaHost = `http://${Config.Connection.IP}:${Config.Connection.Port}`;
     ollama = new Ollama({host: ollamaHost});
     fs.writeFileSync(ConfigLocation, JSON.stringify(Config));
     console.log(Config);
+    callback(Local[Config.Languages.Local]);
   });
 
   socket.on('sendprompt', (data) => {
     console.log(data);
     const Prompt = fillTemplate(PromptTemplate, data)
     console.log(Prompt);
-
 
     ollama.chat({
         model: 'translategemma:4b',
