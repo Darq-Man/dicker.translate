@@ -70,6 +70,16 @@ Produce only the {OutputLang} translation, without any additional explanations o
 
 {TextToTranslate}`;
 
+//Default set of values for "wake up" prompt
+const defaultData = {
+  "TextToTranslate": "test",
+  "InputLangID": "(en)",
+  "InputLang": "English",
+  "OutputLangID": "(uk)",
+  "OutputLang": "Ukrainian"
+}
+
+//Function shat fills template with data to form a prompt
 function fillTemplate(template, values) {
     return template.replace(/\{(\w+)\}/g, (match, key) => {
         return key in values ? values[key] : match;
@@ -81,22 +91,26 @@ var Local = {};
 
 //Setting up Socket actions
 io.on('connection', function (socket) {
+  //Basic steps for each connected user
   const ClientIP = socket.request.connection.remoteAddress;
   ConnectedClients.push(ClientIP);
   console.log('A user connected from IP ' + ClientIP);
   console.log('Connected devices: ' + ConnectedClients.length);
 
+  //Sending config to client
   socket.on('getConfig', (callback) => {
     callback(Config);
   });
 
-  socket.on('getLocal', (callback) => {
-    const LocalLocation = './Files/DickerLocals.json';
-    Local = JSON.parse(fs.readFileSync(LocalLocation));
-    const CurLocalLang = Config.Languages.Local;
-    callback(Local[CurLocalLang]);
+  //Sending chosen locale to client
+  socket.on('getLocale', (callback) => {
+    const LocaleLocation = './Files/DickerLocals.json';
+    Local = JSON.parse(fs.readFileSync(LocaleLocation));
+    const CurLocaleLang = Config.Languages.Local;
+    callback(Local[CurLocaleLang]);
   })
 
+  //Recieving config updates and writing them to config file
   socket.on('updateConfig', (conf, callback) => {
     Config = conf;
     ollamaHost = `http://${Config.Connection.IP}:${Config.Connection.Port}`;
@@ -106,26 +120,68 @@ io.on('connection', function (socket) {
     callback(Local[Config.Languages.Local]);
   });
 
+  //Recieving data for prompt, forming prompt, 
+  //sending it to ollama server and sending 
+  //response back to client
   socket.on('sendprompt', (data) => {
-    console.log(data);
+    // console.log(data);
     const Prompt = fillTemplate(PromptTemplate, data)
-    console.log(Prompt);
+    // console.log(Prompt);
 
     ollama.chat({
         model: 'translategemma:4b',
         messages: [{role: 'user', content: Prompt}],
     }).then(res => {
-        console.log(res);
+        // console.log(res);
         socket.emit('newText', res.message.content);
     })
   });
 
+  //Steps on client disconnection
   socket.on('disconnect', () => {
     const res = ConnectedClients.indexOf(ClientIP);
     ConnectedClients.splice(res, 1);
     console.log('A user from port ' + ClientIP + ' disconnected');
   });
 });
+
+//Checking on time till model expire each minute;
+//Sending "wake up" prompt if less than a minute left
+setInterval(async() => {
+  console.log("Check");
+  if(ConnectedClients.length > 0) {
+   ollama.ps().then(res => {
+    let dang = false;
+    if(res.models.length === 0) {
+      dang = true;
+      console.log("No models");
+    } else {
+      const CurDate = new Date();
+      const CurMin = CurDate.getMinutes();
+      const ExpDate = new Date(res.models[0].expires_at);
+      const ExpMin = ExpDate.getMinutes();
+      const Diff = ExpDate - CurDate;
+
+      console.log(Diff);
+
+      if(Diff > 0 && Diff < 60000) {
+        dang = true;
+      } else if(Diff < 0) {
+        if(3600000 + Diff < 60000) dang = true;
+      }
+    }
+
+    if(dang === true) {
+      ollama.chat({
+        model: "translategemma:4b",
+        messages: [{role: "user", Prompt: fillTemplate(PromptTemplate, defaultData)}]
+      }).then(res => {
+        console.log(res);
+      })
+    }
+   })
+  }
+}, 60000);
 
 //Opening port 3001 for listening
 server.listen(3001, () => {
