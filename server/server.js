@@ -40,7 +40,8 @@ switch (CurrentOS) {
 var Config = {
   "Connection": {
     "IP": "localhost",
-    "Port": "11434"
+    "Port": "11434",
+    "Model": ""
   },
   "Languages": {
     "Local": "English",
@@ -70,6 +71,18 @@ Produce only the {OutputLang} translation, without any additional explanations o
 
 {TextToTranslate}`;
 
+var ollamaModels = [];
+ollama.list().then(res => {
+  for(const cur of res.models) {
+    const CurName = cur.name;
+    console.log(CurName);
+    if(CurName.includes("translate")) {
+      ollamaModels.push(CurName);
+    }
+  }
+  console.log(ollamaModels);
+})
+
 //Default set of values for "wake up" prompt
 const defaultData = {
   "TextToTranslate": "test",
@@ -87,7 +100,7 @@ function fillTemplate(template, values) {
 }
 
 var ConnectedClients = [];
-var Local = {};
+var Locale = {};
 
 //Setting up Socket actions
 io.on('connection', function (socket) {
@@ -105,9 +118,13 @@ io.on('connection', function (socket) {
   //Sending chosen locale to client
   socket.on('getLocale', (callback) => {
     const LocaleLocation = './Files/DickerLocals.json';
-    Local = JSON.parse(fs.readFileSync(LocaleLocation));
+    Locale = JSON.parse(fs.readFileSync(LocaleLocation));
     const CurLocaleLang = Config.Languages.Local;
-    callback(Local[CurLocaleLang]);
+    callback(Locale[CurLocaleLang]);
+  })
+
+  socket.on('getModels', (callback) => {
+    callback(ollamaModels);
   })
 
   //Recieving config updates and writing them to config file
@@ -117,7 +134,7 @@ io.on('connection', function (socket) {
     ollama = new Ollama({host: ollamaHost});
     fs.writeFileSync(ConfigLocation, JSON.stringify(Config));
     console.log(Config);
-    callback(Local[Config.Languages.Local]);
+    callback(Locale[Config.Languages.Local]);
   });
 
   //Recieving data for prompt, forming prompt, 
@@ -129,7 +146,7 @@ io.on('connection', function (socket) {
     // console.log(Prompt);
 
     ollama.chat({
-        model: 'translategemma:4b',
+        model: Config.Connection.Model,
         messages: [{role: 'user', content: Prompt}],
     }).then(res => {
         // console.log(res);
@@ -172,9 +189,10 @@ setInterval(async() => {
     }
 
     if(dang === true) {
+      const prompt = fillTemplate(PromptTemplate, defaultData);
       ollama.chat({
-        model: "translategemma:4b",
-        messages: [{role: "user", Prompt: fillTemplate(PromptTemplate, defaultData)}]
+        model: Config.Connection.Model,
+        messages: [{role: "user", content: prompt}]
       }).then(res => {
         console.log(res);
       })

@@ -10,8 +10,10 @@
 		"Interface": {
 			"Headers": {
 				"OllConn": "Ollama connection",
+				"IPPortDesc": "Ollama server IP and port",
 				"IPPlaceholder": "IP of Ollama server. Leave empty for default (localhost)",
 				"PortPlaceholder": "Port of Ollama on your server. Leave empty for default (11434)",
+				"DefModel": "Model in use",
 				"LangPref": "Language preferences",
 				"IntLang": "Interface language",
 				"DefInLang": "Default input language",
@@ -30,8 +32,10 @@
 		"Interface": {
 			"Headers":{
 				"OllConn": "Підключення Ollama",
+				"IPPortDesc": "IP адреса та порт сервера Ollama",
 				"IPPlaceholder": "IP адреса сервера Ollamaю Залиште пустим щоб використати базове значення (localhost)",
 				"PortPlaceholder": "Порт сервера Ollama. Залиште пустим щоб використати базове значення (11434)",
+				"DefModel": "Модель у використанні",
 				"LangPref" : "Налаштування мови",
 				"IntLang": "Мова інтерфейсу",
 				"DefInLang": "Базова мова вводу",

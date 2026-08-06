@@ -88,6 +88,7 @@ function App() {
   const [page, setPage] = useState('main');
   const [config, setConfig] = useState(null);
   const [Local, setLocal] = useState(null);
+  const [Models, setModels] = useState(null);
   const [InLang, setInLang] = useState('');
   const [OutLang, setOutLang] = useState('');
 
@@ -100,23 +101,30 @@ function App() {
       setOutLang(prev => conf.Languages.DefOutLang);
     }
 
-    async function getLocal() {
-      const local = await socket.emitWithAck('getLocal');
+    async function getLocale() {
+      const local = await socket.emitWithAck('getLocale');
       setLocal(prev => local);
+    }
+
+    async function getModels() {
+      const models = await socket.emitWithAck('getModels');
+      console.log(models);
+      setModels(prev => models);
     }
 
     if(!config){
       getConfig();
-      getLocal();
+      getLocale();
+      getModels();
     }
 
-  }, [config, Local]);
+  }, [config, Local, Models]);
 
-  if(!config || !Local) {
+  if(!config || !Local || !Models) {
     console.log(config);
     return (
       <div>
-        <p>Loading</p>
+        <p>Loading...</p>
       </div>
     )
   };
@@ -210,6 +218,7 @@ function App() {
       <div className='SettingsPage'>
         <div className='SettingsArea'>
           <p className='SectionHeader'>{Local.Interface.Headers.OllConn}</p>
+          <p className='SectionSubHeader'>{Local.Interface.Headers.IPPortDesc}</p>
           <textarea 
             className='InputField'
             id='IPInput'
@@ -222,8 +231,17 @@ function App() {
             placeholder={Local.Interface.Headers.PortPlaceholder}
             defaultValue={config.Connection.Port}>
           </textarea>
+          <p className='SectionSubHeader'>{Local.Interface.Headers.DefModel}</p>
+          <select className='LangPrefSelector'
+            id='ModelSelector'>
+            {Models.map(model => 
+              <option
+                value={model}
+              >{model}</option>
+            )}
+          </select>
           <p className='SectionHeader'>{Local.Interface.Headers.LangPref}</p>
-          <p className='SectionSubHeader'>{Local.Interface.Headers.IntPref}</p>
+          <p className='SectionSubHeader'>{Local.Interface.Headers.IntLang}</p>
           <select className='LangPrefSelector'
             id='LocalizationSelector'
             defaultValue={config.Languages.Local}>
@@ -274,7 +292,7 @@ function App() {
     <div className="App">
       <title>Dicker.translate</title>
       <div className="TopBar">
-        <div className='LeftPart'>HUI</div>
+        <div className='LeftPart'>Oh, hi there!</div>
         <div className='CentralPart'>
           <div className='SiteName'>Dicker.Translate</div>
         </div>
