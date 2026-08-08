@@ -1,12 +1,25 @@
 //Import from libraries
-const fs = require('fs');
-const path = require('path');
-const os = require('os');
-const express = require("express");
-const cors = require('cors');
-const http = require('http');
-const { Server } = require('socket.io');
-const { Ollama } = require("ollama");
+// const fs = require('fs');
+// const path = require('path');
+// const os = require('os');
+// const net = require('net');
+// const express = require("express");
+// const cors = require('cors');
+// const http = require('http');
+// const { Server } = require('socket.io');
+// const { Ollama } = require("ollama");
+// const ollamaFucns = require('./ollamaFunctions.js');
+
+import fs from 'fs';
+import path from 'path';
+import os from 'os';
+import net from 'net';
+import express from 'express';
+import cors from 'cors';
+import http from 'http'
+import { Server } from 'socket.io';
+import { Ollama } from 'ollama';
+import { ollamaFuncs } from './ollamaFunctions.js'
 
 //Creating a express server and Socket
 const app = express();
@@ -62,6 +75,39 @@ if (!fs.existsSync(ConfigDirectory)) {
   Config = JSON.parse(fs.readFileSync(ConfigLocation));
 }
 
+function checkOllamaIP(IP, Port, timeout = 2000) {
+  return new Promise((resolve) => {
+    const socket = new net.Socket();
+
+    socket.setTimeout(timeout);
+
+    socket.on("connect", () => {
+      socket.destroy();
+      resolve(true);
+    });
+
+    socket.on("timeout", () => {
+      socket.destroy();
+      resolve(false);
+    });
+
+    socket.on("error", () => {
+      socket.destroy();
+      resolve(false);
+    });
+
+    socket.connect(Port, IP);
+  });
+}
+
+var isAvailable = true;
+(async () => {
+  const online = await checkOllamaIP(Config.Connection.IP, Config.Connection.Port);
+  isAvailable = online;
+  console.log(online);
+})();
+
+
 //Setting up Ollama
 var ollamaHost = `http://${Config.Connection.IP}:${Config.Connection.Port}`;
 var ollama = new Ollama({host: ollamaHost});
@@ -72,16 +118,30 @@ Produce only the {OutputLang} translation, without any additional explanations o
 {TextToTranslate}`;
 
 var ollamaModels = [];
-ollama.list().then(res => {
-  for(const cur of res.models) {
-    const CurName = cur.name;
-    console.log(CurName);
-    if(CurName.includes("translate")) {
-      ollamaModels.push(CurName);
-    }
-  }
-  console.log(ollamaModels);
-})
+if (isAvailable) {
+  const OllamaFuncs = new ollamaFuncs(
+    Config.Connection.IP, 
+    Config.Connection.Port, 
+    PromptTemplate
+  );
+  var models = [];
+  ollamaFuncs.prototype.getModels().prototype?.then(res => {
+    models = res;
+  })
+  console.log(models);
+}
+
+//List all available models from Ollama server
+// ollama.list().then(res => {
+//   for(const cur of res.models) {
+//     const CurName = cur.name;
+//     console.log(CurName);
+//     if(CurName.includes("translate")) {
+//       ollamaModels.push(CurName);
+//     }
+//   }
+//   console.log(ollamaModels);
+// })
 
 //Default set of values for "wake up" prompt
 const defaultData = {
@@ -109,6 +169,7 @@ io.on('connection', function (socket) {
   ConnectedClients.push(ClientIP);
   console.log('A user connected from IP ' + ClientIP);
   console.log('Connected devices: ' + ConnectedClients.length);
+  console.log(isAvailable);
 
   //Sending config to client
   socket.on('getConfig', (callback) => {
@@ -124,7 +185,7 @@ io.on('connection', function (socket) {
   })
 
   socket.on('getModels', (callback) => {
-    callback(ollamaModels);
+    callback(ollamaFuncs.prototype.models);
   })
 
   //Recieving config updates and writing them to config file
@@ -141,17 +202,25 @@ io.on('connection', function (socket) {
   //sending it to ollama server and sending 
   //response back to client
   socket.on('sendprompt', (data) => {
-    // console.log(data);
-    const Prompt = fillTemplate(PromptTemplate, data)
-    // console.log(Prompt);
+    ollamaFuncs.prototype.sendPrompt(
+      socket, 
+      data, 
+      Config.Connection.Model
+    )?.then(res => {
+      socket.emit('newText', res);
+    });
 
-    ollama.chat({
-        model: Config.Connection.Model,
-        messages: [{role: 'user', content: Prompt}],
-    }).then(res => {
-        // console.log(res);
-        socket.emit('newText', res.message.content);
-    })
+    // // console.log(data);
+    // const Prompt = fillTemplate(PromptTemplate, data)
+    // // console.log(Prompt);
+
+    // ollama.chat({
+    //     model: Config.Connection.Model,
+    //     messages: [{role: 'user', content: Prompt}],
+    // }).then(res => {
+    //     // console.log(res);
+    //     socket.emit('newText', res.message.content);
+    // })
   });
 
   //Steps on client disconnection
