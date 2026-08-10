@@ -93,7 +93,14 @@ function App() {
   const [OutLang, setOutLang] = useState('');
 
   useEffect(() => {
-    socket.on('newText', updateOutputArea);
+
+    // (async () => {
+      socket.on('newText', (res) => {
+        console.log(`test: ${res}`);
+        updateOutputArea(res.message.content);
+      });
+    // })()
+
     async function getConfig() {
       const conf = await socket.emitWithAck('getConfig');
       setConfig(prev => conf);

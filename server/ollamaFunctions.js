@@ -1,50 +1,70 @@
+import net from 'net'
 import { Ollama } from 'ollama';
 
-export class ollamaFuncs {
-    constructor(IP, Port, template){
-        this.IP = IP;
-        this.Port = Port;
-        this.Template = template;
+function  fillTemplate(template, values) {
+    return template?.replace(/\{(\w+)\}/g, (match, key) => {
+        return key in values ? values[key] : match;
+    });
+};
 
-        var ollamaHost = `https://${this.IP}:${this.Port}`;
-        this.ollama = new Ollama({host: ollamaHost});
-        this.models = [];
-    };
+export function checkOllamaIP(IP, Port, timeout = 2000) {
+  return new Promise((resolve) => {
+    const socket = new net.Socket();
 
-    fillTemplate(template, values) {
-        return template?.replace(/\{(\w+)\}/g, (match, key) => {
-            return key in values ? values[key] : match;
-        });
-    };
+    socket.setTimeout(timeout);
 
-    getModels() {
-        var ollamaModels = [];
+    socket.on("connect", () => {
+      socket.destroy();
+      resolve(true);
+    });
 
-        this.ollama?.list().then(res => {
-          for(const cur of res.models) {
+    socket.on("timeout", () => {
+      socket.destroy();
+      resolve(false);
+    });
+
+    socket.on("error", () => {
+      socket.destroy();
+      resolve(false);
+    });
+
+    socket.connect(Port, IP);
+  });
+};
+
+export async function getModels(ollama) {
+    var ollamaModels = [];
+
+    ollama.list().then(res => {
+        for(const cur of res.models) {
             const CurName = cur.name;
             console.log(CurName);
             if(CurName.includes("translate")) {
-              ollamaModels.push(CurName);
+                ollamaModels.push(CurName);
             }
-          }
-          console.log(ollamaModels);
-        })
+        }
+    })
 
-        this.models = ollamaModels;
-        console.log(`models: ${this.models}`);
-        return ollamaModels;
-    };
+    console.log(`models: ${ollamaModels}`);
+    return ollamaModels;
+};
 
-    sendPrompt(socket, data, model) {
-        const Prompt = this.fillTemplate(this.Template, data);
-        console.log(data);
-        this.ollama?.chat({
-            model: model,
-            messages: [{role: 'user', content: Prompt}],
-        }).then(res => {
-            console.log(res);
-            return res.message.content;
-        })
-    };
-}
+export async function sendPrompt(ollama, template, data, model) {
+    const Prompt = fillTemplate(template, data);
+    // console.log(template);
+    // ollama.chat({
+    //     model: model,
+    //     messages: [{role: 'user', content: Prompt}],
+    // }).then(res => {
+    //     console.log(res);
+    //     return res;
+    // })
+
+    const res = await ollama.chat({
+        model:model,
+        messages: [{role: 'user', content: Prompt}],
+    });
+
+    console.log(res);
+    return res;
+};
