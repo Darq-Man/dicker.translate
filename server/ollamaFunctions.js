@@ -7,29 +7,15 @@ function  fillTemplate(template, values) {
     });
 };
 
-export function checkOllamaIP(IP, Port, timeout = 2000) {
-  return new Promise((resolve) => {
-    const socket = new net.Socket();
-
-    socket.setTimeout(timeout);
-
-    socket.on("connect", () => {
-      socket.destroy();
-      resolve(true);
+export function checkOllamaIP(ollamaIP, ollamaPort) {
+    console.log(`Check: IP ${ollamaIP}, Port ${ollamaPort}`);
+    return fetch(`http://${ollamaIP}:${ollamaPort}/api/tags`).then(res => {
+        console.log(`ok: ${res.body}`);
+        return res.ok;
+    }).catch(err => {
+        console.log(`fail: ${err}`);
+        return false;
     });
-
-    socket.on("timeout", () => {
-      socket.destroy();
-      resolve(false);
-    });
-
-    socket.on("error", () => {
-      socket.destroy();
-      resolve(false);
-    });
-
-    socket.connect(Port, IP);
-  });
 };
 
 export async function getModels(ollama) {
@@ -38,27 +24,19 @@ export async function getModels(ollama) {
     ollama.list().then(res => {
         for(const cur of res.models) {
             const CurName = cur.name;
-            console.log(CurName);
+            // console.log(CurName);
             if(CurName.includes("translate")) {
                 ollamaModels.push(CurName);
             }
         }
     })
 
-    console.log(`models: ${ollamaModels}`);
+    // console.log(`models: ${ollamaModels}`);
     return ollamaModels;
 };
 
 export async function sendPrompt(ollama, template, data, model) {
     const Prompt = fillTemplate(template, data);
-    // console.log(template);
-    // ollama.chat({
-    //     model: model,
-    //     messages: [{role: 'user', content: Prompt}],
-    // }).then(res => {
-    //     console.log(res);
-    //     return res;
-    // })
 
     const res = await ollama.chat({
         model:model,

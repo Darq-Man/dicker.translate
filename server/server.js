@@ -3,10 +3,11 @@ import path from 'path';
 import os from 'os';
 import express from 'express';
 import cors from 'cors';
-import http from 'http'
+import http, { get } from 'http'
 import { Server } from 'socket.io';
 import { Ollama } from 'ollama';
 import { checkOllamaIP, getModels, sendPrompt } from './ollamaFunctions.js'
+import { log } from 'console';
 
 //Creating a express server and Socket
 const app = express();
@@ -21,18 +22,16 @@ const io = new Server(server, {
 
 //Checking current OS server is running on
 const CurrentOS = process.platform;
-console.log(CurrentOS);
 var ConfigDirectory = '';
 var ConfigLocation = 'DickerTranslate.json';
 switch (CurrentOS) {
   case 'linux':
     ConfigDirectory = path.join(os.homedir(), '.config/Dicker.Translate');
     ConfigLocation = path.join(ConfigDirectory, ConfigLocation);
-    console.log(ConfigLocation);
     break;
 
   default:
-    console.log('Doesn\'t work yet');
+    // console.log('Doesn\'t work yet');
     break;
 }
 
@@ -62,12 +61,15 @@ if (!fs.existsSync(ConfigDirectory)) {
   Config = JSON.parse(fs.readFileSync(ConfigLocation));
 }
 
-var isAvailable = true;
-(async () => {
-  const online = await checkOllamaIP(Config.Connection.IP, Config.Connection.Port);
-  isAvailable = online;
-  // console.log(online);
-})();
+var ollamaHost = `http://${Config.Connection.IP}:${Config.Connection.Port}`;
+console.log(`Ollama host: ${ollamaHost}`);
+
+var isAvailable = false;
+checkOllamaIP(Config.Connection.IP, Config.Connection.Port)?.then(res => {
+  isAvailable = res;
+  console.log(`ollama available: ${res}`);
+  console.log(`online: ${isAvailable}`);
+});
 
 //Setting up Ollama
 const PromptTemplate = `You are a professional {InputLang} {InputLangID} to {OutputLang} {OutputLangID} translator. Your goal is to accurately convey the meaning and nuances of the original {InputLang} text while adhering to {OutputLang} grammar, vocabulary, and cultural sensitivities.
@@ -76,20 +78,20 @@ Produce only the {OutputLang} translation, without any additional explanations o
 
 {TextToTranslate}`;
 
-var ollamaHost = '';
 var ollama = null;
 var models = [];
 
 var ollamaModels = [];
 if (isAvailable) {
-  ollamaHost = `http://${Config.Connection.IP}:${Config.Connection.Port}`;
   ollama = new Ollama({host: ollamaHost});
 
   console.log('works');
-  await getModels(ollama).then(res => {
+  getModels(ollama).then(res => {
     models = res;
   })
   console.log(`models: ${models}`);
+} else {
+  console.log('Server offline');
 }
 
 //Default set of values for "wake up" prompt
@@ -99,13 +101,6 @@ const defaultData = {
   "InputLang": "English",
   "OutputLangID": "(uk)",
   "OutputLang": "Ukrainian"
-}
-
-//Function shat fills template with data to form a prompt
-function fillTemplate(template, values) {
-    return template.replace(/\{(\w+)\}/g, (match, key) => {
-        return key in values ? values[key] : match;
-    });
 }
 
 var ConnectedClients = [];
@@ -118,7 +113,17 @@ io.on('connection', function (socket) {
   ConnectedClients.push(ClientIP);
   console.log('A user connected from IP ' + ClientIP);
   console.log('Connected devices: ' + ConnectedClients.length);
-  console.log(isAvailable);
+  // console.log(isAvailable);
+
+  socket.on('getOllamaState', (callback) => {
+    (async () => {
+      const online = await checkOllamaIP(Config.Connection.IP, Config.Connection.Port);
+      isAvailable = online;
+      console.log(`1 ${isAvailable}`);
+      callback(isAvailable);
+    })();
+    console.log(`2 ${isAvailable}`)
+  });
 
   //Sending config to client
   socket.on('getConfig', (callback) => {
@@ -142,8 +147,16 @@ io.on('connection', function (socket) {
     Config = conf;
     ollamaHost = `http://${Config.Connection.IP}:${Config.Connection.Port}`;
     ollama = new Ollama({host: ollamaHost});
+    checkOllamaIP(Config.Connection.IP, Config.Connection.Port).then(res => {
+      isAvailable = res;
+      if (isAvailable === true) {
+        getModels(ollama).then(resModels => {
+          models = resModels;
+        });
+      }
+    });
     fs.writeFileSync(ConfigLocation, JSON.stringify(Config));
-    console.log(Config);
+    console.log(`Config: ${Config}`);
     callback(Locale[Config.Languages.Local]);
   });
 
@@ -157,7 +170,7 @@ io.on('connection', function (socket) {
         data, 
         Config.Connection.Model
       ).then(res => {
-        console.log(`server: ${res.message.content }`);
+        // console.log(`server: ${res.message.content }`);
         socket.emit('newText', res);
       });
   });
@@ -174,38 +187,43 @@ io.on('connection', function (socket) {
 //Sending "wake up" prompt if less than a minute left
 setInterval(async() => {
   console.log("Check");
-  if(ConnectedClients.length > 0) {
-   ollama.ps().then(res => {
-    let dang = false;
-    if(res.models.length === 0) {
-      dang = true;
-      console.log("No models");
-    } else {
-      const CurDate = new Date();
-      const CurMin = CurDate.getMinutes();
-      const ExpDate = new Date(res.models[0].expires_at);
-      const ExpMin = ExpDate.getMinutes();
-      const Diff = ExpDate - CurDate;
+  if(ConnectedClients.length > 0 && isAvailable) {
+    console.log('fuck');
 
-      console.log(Diff);
-
-      if(Diff > 0 && Diff < 60000) {
+    ollama.ps().then(res => {
+      let dang = false;
+      if(res.models.length === 0) {
         dang = true;
-      } else if(Diff < 0) {
-        if(3600000 + Diff < 60000) dang = true;
-      }
-    }
+        console.log("No models");
+      } else {
+        const CurDate = new Date();
+        const CurMin = CurDate.getMinutes();
+        const ExpDate = new Date(res.models[0].expires_at);
+        const ExpMin = ExpDate.getMinutes();
+        const Diff = ExpDate - CurDate;
 
-    if(dang === true) {
-      const prompt = fillTemplate(PromptTemplate, defaultData);
-      ollama.chat({
-        model: Config.Connection.Model,
-        messages: [{role: "user", content: prompt}]
-      }).then(res => {
-        console.log(res);
-      })
-    }
-   })
+        console.log(Diff);
+
+        if(Diff > 0 && Diff < 60000) {
+          dang = true;
+        } else if(Diff < 0) {
+          if(3600000 + Diff < 60000) dang = true;
+        }
+      }
+
+      if(dang === true) {
+        sendPrompt(
+          ollama, 
+          PromptTemplate, 
+          defaultData, 
+          Config.Connection.Model
+        ).then(res => {
+          console.log(res);
+        })
+      }
+    })
+  } else {
+    console.log([isAvailable, ConnectedClients.length]);
   }
 }, 60000);
 

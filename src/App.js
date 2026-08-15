@@ -86,46 +86,57 @@ function updateOutputArea(text) {
 
 function App() {
   const [page, setPage] = useState('main');
+  const [ollamaState, setOllamaState] = useState(null);
   const [config, setConfig] = useState(null);
   const [Local, setLocal] = useState(null);
   const [Models, setModels] = useState(null);
   const [InLang, setInLang] = useState('');
   const [OutLang, setOutLang] = useState('');
 
+  async function getOllamaState() {
+    const state = await socket.emitWithAck('getOllamaState');
+    setOllamaState(prev => state);
+  }
+  
+  async function getConfig() {
+    const conf = await socket.emitWithAck('getConfig');
+    setConfig(prev => conf);
+    setInLang(prev => conf.Languages.DefInLang);
+    setOutLang(prev => conf.Languages.DefOutLang);
+  }
+  
+  async function getLocale() {
+    const local = await socket.emitWithAck('getLocale');
+    setLocal(prev => local);
+  }
+  
+  async function getModels() {
+    const models = await socket.emitWithAck('getModels');
+    console.log(`models: ${models}`);
+    setModels(prev => models);
+  }
+
   useEffect(() => {
-
-    // (async () => {
-      socket.on('newText', (res) => {
-        console.log(`test: ${res}`);
-        updateOutputArea(res.message.content);
-      });
-    // })()
-
-    async function getConfig() {
-      const conf = await socket.emitWithAck('getConfig');
-      setConfig(prev => conf);
-      setInLang(prev => conf.Languages.DefInLang);
-      setOutLang(prev => conf.Languages.DefOutLang);
-    }
-
-    async function getLocale() {
-      const local = await socket.emitWithAck('getLocale');
-      setLocal(prev => local);
-    }
-
-    async function getModels() {
-      const models = await socket.emitWithAck('getModels');
-      console.log(models);
-      setModels(prev => models);
-    }
+    socket.on('newText', (res) => {
+      console.log(`test: ${res}`);
+      updateOutputArea(res.message.content);
+    });
 
     if(!config){
       getConfig();
       getLocale();
       getModels();
+      getOllamaState();
     }
 
-  }, [config, Local, Models]);
+    if(ollamaState === false && page === 'main') {
+      flipInputState(true);
+      console.log('flipping');
+    } else {
+      console.log([ollamaState, page])
+    }
+
+  }, [config, Local, Models, ollamaState, page]);
 
   if(!config || !Local || !Models) {
     console.log(config);
@@ -140,6 +151,13 @@ function App() {
     const newLocal = await socket.emitWithAck('updateConfig', conf);
     console.log(newLocal);
     setLocal(prev => newLocal);
+    getOllamaState();
+    console.log(`online: ${ollamaState}`);
+    if (ollamaState === true) {
+      getModels();
+    } else {
+      setModels([]);
+    }
     return;
   }
 
@@ -171,7 +189,7 @@ function App() {
     sendConfig(config);
   }
 
-  function MainPage() {
+  function MainPage() {    
     return (
       <div className="MainPage">
         <select 
