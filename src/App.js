@@ -154,10 +154,12 @@ function App() {
     getOllamaState();
     console.log(`online: ${ollamaState}`);
     if (ollamaState === true) {
+      console.log('yes');
       getModels();
     } else {
       setModels([]);
     }
+    console.log(`New models: ${Models}`);
     return;
   }
 
@@ -317,7 +319,7 @@ function App() {
     <div className="App">
       <title>Dicker.translate</title>
       <div className="TopBar">
-        <div className='LeftPart'>Oh, hi there!</div>
+        <div className='LeftPart'>42</div>
         <div className='CentralPart'>
           <div className='SiteName'>Dicker.Translate</div>
         </div>
@@ -328,6 +330,13 @@ function App() {
           </button>
         </div>
       </div>
+      {
+        ollamaState !== true ? 
+        <div className='ErrorBar'>
+            <p>Ollama server unreachable</p>
+        </div> :
+        <div></div>
+      }
       <div className='MainPart'>
         {page === 'main' ? MainPage() :
         Settings()}

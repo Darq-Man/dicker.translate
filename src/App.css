@@ -55,6 +55,18 @@
   margin: 0;
 }
 
+.ErrorBar {
+  background-color: red;
+  max-height: 50px;
+  margin: 0;
+  padding: 15px 0;
+}
+
+.ErrorBar p {
+  height: 20px;
+  margin: 0;
+}
+
 .MainPart .MainPage {
   height: 100%;
 }
