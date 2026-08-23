@@ -174,6 +174,8 @@ function App() {
   function SaveConfig() {
     const NewIP = document.getElementById('IPInput').value;
     const NewPort = document.getElementById('PortInput').value;
+    const NewModel = document.getElementById('ModelSelector').value;
+    console.log(NewModel);
     const NewLocal = document.getElementById('LocalizationSelector').value;
     const NewDefInLang = document.getElementById('InputLangSelector').value;
     const NewdefOutLang = document.getElementById('OutputLangSelector').value;
@@ -181,6 +183,7 @@ function App() {
     var newConf = config;
     newConf.Connection.IP = NewIP;
     newConf.Connection.Port = NewPort;
+    newConf.Connection.Model = !NewModel ? "" : NewModel;
     newConf.Languages.Local = NewLocal;
     newConf.Languages.DefInLang = NewDefInLang;
     newConf.Languages.DefOutLang = NewdefOutLang;
