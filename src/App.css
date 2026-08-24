@@ -1,9 +1,17 @@
+html, body, #root {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+}
+
 .App {
   text-align: center;
+  height: 100%;
+  background-color: #0068ad;
 }
 
 .TopBar {
-  background-color: #4CAF50;
+  background-color: #438fb5;
   max-height: 50px;
   font-size: x-large;
   margin: 0;
@@ -50,8 +58,12 @@
 }
 
 .MainPart {
-  background-color: blue;
-  height: 90%;
+  background-color: #0068ad;
+  display: inline-block;
+  width: 100%;
+  min-height: calc(100% - 100px);
+  max-height: calc(100% - 50px);
+  height: calc(100% - 50px);
   margin: 0;
 }
 
@@ -68,6 +80,7 @@
 }
 
 .MainPart .MainPage {
+  background-color: #0068ad;
   height: 100%;
 }
 
@@ -76,8 +89,9 @@
   height: 30%;
   margin: 2% 4%;
   border-radius: 10px;
+  border-style: solid;
   resize: none;
-  background-color: lightgray;
+  background-color: #b3cde0;
   font-size: x-large;
 }
 
@@ -86,6 +100,7 @@
   height: 30%;
   margin: 2% 4%;
   border-radius: 10px;
+  border-style: solid;
   resize: none;
   background-color: gray;
   font-size: x-large;
@@ -96,6 +111,10 @@
 }
 
 .LangSelector {
+  background-color: #b3cde0;
+  border-radius: 5px;
+  border-style: solid;
+  border-width: 2px;
   width: 20%;
   margin: 1% 15%;
   cursor: pointer;
@@ -105,8 +124,18 @@
   padding: 5px 10px;
   margin: 1%;
   border-radius: 10px;
-  background-color: aqua;
+  background-color: #b3cde0;
+}
+
+.sendButt:hover {
   cursor: pointer;
+  background-color: #bdd7e9;
+}
+
+.sendButt:active {
+  cursor: pointer;
+  background-color: #022559;
+  color: white;
 }
 
 .sendButtInactive {
@@ -118,7 +147,7 @@
 }
 
 .MainPart .SettingsPage {
-  background-color: chocolate;
+  background-color: #0068ad;
   margin: 0;
 }
 
@@ -141,6 +170,7 @@
 }
 
 .SettingsArea .InputField {
+  background-color: #b3cde0;
   width: 35%;
   height: 20px;
   font-size: larger;
@@ -151,6 +181,7 @@
 }
 
 .SettingsPage .LangPrefSelector {
+  background-color: #b3cde0;
   width: 20%;
   height: 30px;
   border-radius: 8px;
@@ -161,14 +192,24 @@
 .SettingsPage .SaveArea {
   width: 100%;
   text-align: center;
-  background-color: aqua;
+  background-color: #0068ad;
   padding: 1% 0;
 }
 
 .SaveArea .SaveButton {
   width: 10%;
   font-size: large;
-  background-color: blueviolet;
+  background-color: #b3cde0;
   aspect-ratio: 4;
   border-radius: 10px;
+}
+
+.SaveArea .SaveButton:hover {
+  background-color: #bdd7e9;
+  cursor: pointer;
+}
+
+.SaveArea .SaveButton:active {
+  background-color: #022559;
+  color: white;
 }
