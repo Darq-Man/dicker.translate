@@ -84,6 +84,18 @@ function updateOutputArea(text) {
   outputAreaElem.value = text;
 }
 
+function showLength() {
+  const inputValue = document.getElementById(inputAreaId).value;
+  const inputLength = inputValue.length;
+  const lengthLimit = 512;
+  const critical = inputLength > lengthLimit
+  document.getElementById('InLenLabel').className = critical ? "InLenLabelCrit" : "InLenLabel";
+  document.getElementById("sendButt").className = critical ? "sendButtInactive" : "sendButt";
+  document.getElementById("sendButt").disabled = critical;
+  document.getElementById("InLenLabel").innerText = `${inputLength}/${lengthLimit}`;
+  console.log(`length: ${inputLength}`);
+}
+
 function App() {
   const [page, setPage] = useState('main');
   const [ollamaState, setOllamaState] = useState(null);
@@ -224,12 +236,18 @@ function App() {
         <textarea 
           className='textArea'
           id={inputAreaId} 
-          rows="10"/>
+          rows="10"
+          onChange={showLength}
+          placeholder='This is your input...'/>
         <textarea 
           className='textArea' 
           id={OutputAreaId} 
           rows="10" 
-          readOnly></textarea>
+          readOnly
+          placeholder='And this is your output'/>
+        <p
+          className='InLenLabel'
+          id='InLenLabel'>0/512</p>
         <button 
           className='sendButt' 
           id='sendButt'
