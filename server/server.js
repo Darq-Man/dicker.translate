@@ -65,10 +65,26 @@ var ollamaHost = `http://${Config.Connection.IP}:${Config.Connection.Port}`;
 console.log(`Ollama host: ${ollamaHost}`);
 
 var isAvailable = false;
+
+var ollama = null;
+var models = [];
+
 checkOllamaIP(Config.Connection.IP, Config.Connection.Port)?.then(res => {
   isAvailable = res;
   console.log(`ollama available: ${res}`);
   console.log(`online: ${isAvailable}`);
+
+  if (isAvailable) {
+    ollama = new Ollama({host: ollamaHost});
+
+    console.log('works');
+    getModels(ollama).then(res => {
+      models = res;
+    });
+    console.log(`models: ${models}`);
+  } else {
+    console.log('Server offline');
+  }
 });
 
 //Setting up Ollama
@@ -78,21 +94,17 @@ Produce only the {OutputLang} translation, without any additional explanations o
 
 {TextToTranslate}`;
 
-var ollama = null;
-var models = [];
+// if (isAvailable) {
+//   ollama = new Ollama({host: ollamaHost});
 
-var ollamaModels = [];
-if (isAvailable) {
-  ollama = new Ollama({host: ollamaHost});
-
-  console.log('works');
-  getModels(ollama).then(res => {
-    models = res;
-  })
-  console.log(`models: ${models}`);
-} else {
-  console.log('Server offline');
-}
+//   console.log('works');
+//   getModels(ollama).then(res => {
+//     models = res;
+//   })
+//   console.log(`models: ${models}`);
+// } else {
+//   console.log('Server offline');
+// }
 
 //Default set of values for "wake up" prompt
 const defaultData = {
@@ -115,16 +127,6 @@ io.on('connection', function (socket) {
   console.log('Connected devices: ' + ConnectedClients.length);
   // console.log(isAvailable);
 
-  socket.on('getOllamaState', (callback) => {
-    (async () => {
-      const online = await checkOllamaIP(Config.Connection.IP, Config.Connection.Port);
-      isAvailable = online;
-      console.log(`1 ${isAvailable}`);
-      callback(isAvailable);
-    })();
-    console.log(`2 ${isAvailable}`)
-  });
-
   //Sending config to client
   socket.on('getConfig', (callback) => {
     callback(Config);
@@ -136,11 +138,21 @@ io.on('connection', function (socket) {
     Locale = JSON.parse(fs.readFileSync(LocaleLocation));
     const CurLocaleLang = Config.Languages.Local;
     callback(Locale[CurLocaleLang]);
-  })
+  });
+
+  socket.on('getOllamaState', (callback) => {
+    (async () => {
+      const online = await checkOllamaIP(Config.Connection.IP, Config.Connection.Port);
+      isAvailable = online;
+      console.log(`1 ${isAvailable}`);
+      callback(isAvailable);
+    })();
+    console.log(`2 ${isAvailable}`)
+  });
 
   socket.on('getModels', (callback) => {
     callback(models);
-  })
+  });
 
   //Recieving config updates and writing them to config file
   socket.on('updateConfig', (conf, callback) => {
@@ -187,7 +199,7 @@ io.on('connection', function (socket) {
 //Sending "wake up" prompt if less than a minute left
 setInterval(async() => {
   console.log("Check");
-  if(ConnectedClients.length > 0 && isAvailable) {
+  if(ConnectedClients.length > 0 && isAvailable && ollama !== null) {
     console.log('fuck');
 
     ollama.ps().then(res => {
@@ -223,7 +235,7 @@ setInterval(async() => {
       }
     })
   } else {
-    console.log([isAvailable, ConnectedClients.length]);
+    console.log([isAvailable, ConnectedClients.length, `ollama: ${ollama === null}`]);
   }
 }, 60000);
 

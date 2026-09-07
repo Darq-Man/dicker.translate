@@ -135,11 +135,13 @@ function App() {
     });
 
     if(!config){
-      getConfig();
-      getLocale();
-      getModels();
-      getOllamaState();
-    }
+      (async () => {
+        await getConfig();
+        await getLocale();
+        await getOllamaState();
+        await getModels();
+      })();
+    };
 
     if(ollamaState === false && page === 'main') {
       flipInputState(true);
