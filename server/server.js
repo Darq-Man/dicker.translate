@@ -94,18 +94,6 @@ Produce only the {OutputLang} translation, without any additional explanations o
 
 {TextToTranslate}`;
 
-// if (isAvailable) {
-//   ollama = new Ollama({host: ollamaHost});
-
-//   console.log('works');
-//   getModels(ollama).then(res => {
-//     models = res;
-//   })
-//   console.log(`models: ${models}`);
-// } else {
-//   console.log('Server offline');
-// }
-
 //Default set of values for "wake up" prompt
 const defaultData = {
   "TextToTranslate": "test",
@@ -240,6 +228,6 @@ setInterval(async() => {
 }, 60000);
 
 //Opening port 3001 for listening
-server.listen(3001, () => {
+server.listen(5000, () => {
   console.log("Server is running on port 3001");
 });

@@ -3,7 +3,7 @@ import './App.css';
 import io from 'socket.io-client';
 import SettingsIcon from './images/SettingsIconLowRes.png'
 
-const serverURL = `${window.location.protocol}//${window.location.hostname}:3001`;
+const serverURL = `${window.location.protocol}//${window.location.hostname}:5000`;
 const socket = io(serverURL);
 
 const inputAreaId = 'inputArea';
