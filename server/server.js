@@ -38,7 +38,7 @@ switch (CurrentOS) {
 //Creating config variable
 var Config = {
   "Connection": {
-    "IP": "localhost",
+    "IP": "host.docker.internal",
     "Port": "11434",
     "Model": ""
   },
@@ -229,5 +229,5 @@ setInterval(async() => {
 
 //Opening port 3001 for listening
 server.listen(5000, () => {
-  console.log("Server is running on port 3001");
+  console.log("Server is running on port 5000");
 });
