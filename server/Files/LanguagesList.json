@@ -1,0 +1,38 @@
+[
+    {
+        "full": "English",
+        "tag": "(en)"
+    },
+    {
+        "full": "Ukrainian",
+        "tag": "(uk)"
+    },
+    {
+        "full": "Russian",
+        "tag": "(ru)"
+    },
+    {
+        "full": "German",
+        "tag": "(de)"
+    },
+    {
+        "full": "Spanish",
+        "tag": "(es)"
+    },
+    {
+        "full": "Italian",
+        "tag": "(it)"
+    },
+    {
+        "full": "Polish",
+        "tag": "(pl)"
+    },
+    {
+        "full": "Turkish",
+        "tag": "(tr)"
+    },
+    {
+        "full": "Japanese",
+        "tag": "(ja)"
+    }
+]

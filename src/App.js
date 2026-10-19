@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import './App.css';
 import io from 'socket.io-client';
 import SettingsIcon from './images/SettingsIconLowRes.png'
+import NotifSound from './Sounds/ding.mp3';
 
 const serverURL = `${window.location.protocol}//${window.location.hostname}:5000`;
 const socket = io(serverURL);
@@ -9,17 +10,12 @@ const socket = io(serverURL);
 const inputAreaId = 'inputArea';
 const OutputAreaId = 'outputArea';
 
-const LanguageOptions = [
-  {full: 'English', tag: '(en)'},
-  {full: 'Ukrainian', tag: '(uk)'},
-  {full: 'Russian', tag: '(ru)'},
-  {full: 'German', tag: '(de)'}
-];
-
 const LocalOptions = [
   {full: 'English'},
   {full: 'Ukrainian'}
 ];
+
+var ReadyNotif = new Audio('./Sounds/ding.mp2');
 
 function clearOutputField() {
   const inputAreaElem = document.getElementById(inputAreaId);
@@ -87,7 +83,7 @@ function updateOutputArea(text) {
 function showLength() {
   const inputValue = document.getElementById(inputAreaId).value;
   const inputLength = inputValue.length;
-  const lengthLimit = 512;
+  const lengthLimit = 2048;
   const critical = inputLength > lengthLimit
   document.getElementById('InLenLabel').className = critical ? "InLenLabelCrit" : "InLenLabel";
   document.getElementById("sendButt").className = critical ? "sendButtInactive" : "sendButt";
@@ -102,6 +98,7 @@ function App() {
   const [config, setConfig] = useState(null);
   const [Local, setLocal] = useState(null);
   const [Models, setModels] = useState(null);
+  const [Languages, setLanguages] = useState(null);
   const [InLang, setInLang] = useState('');
   const [OutLang, setOutLang] = useState('');
 
@@ -128,9 +125,17 @@ function App() {
     setModels(prev => models);
   }
 
+  async function getLangs() {
+    const Langs = await socket.emitWithAck('getLangs');
+    console.log(`Langs: ${Langs}`);
+    setLanguages(prev => Langs);
+  }
+
   useEffect(() => {
     socket.on('newText', (res) => {
       console.log(`test: ${res}`);
+      const NotifElem = document.getElementById('ReadyPlayer');
+      NotifElem.play();
       updateOutputArea(res.message.content);
     });
 
@@ -140,6 +145,7 @@ function App() {
         await getLocale();
         await getOllamaState();
         await getModels();
+        await getLangs();
       })();
     };
 
@@ -150,9 +156,9 @@ function App() {
       console.log([ollamaState, page])
     }
 
-  }, [config, Local, Models, ollamaState, page]);
+  }, [config, Local, Models, ollamaState, page, Languages]);
 
-  if(!config || !Local || !Models) {
+  if(!config || !Local || !Models || !Local || !Languages) {
     console.log(config);
     return (
       <div>
@@ -216,7 +222,7 @@ function App() {
           id='InLang'
           value={InLang}
           onChange={(e) => setInLang(e.target.value)}>
-          {LanguageOptions.map(languageOption =>
+          {Languages.map(languageOption =>
             <option 
               key={languageOption.tag} 
               value={languageOption.full}
@@ -228,7 +234,7 @@ function App() {
           id='OutLang'
           value={OutLang}
           onChange={(e) => setOutLang(e.target.value)}>
-          {LanguageOptions.map(languageOption =>
+          {Languages.map(languageOption =>
             <option 
               key={languageOption.tag} 
               value={languageOption.full}
@@ -249,7 +255,7 @@ function App() {
           placeholder='And this is your output'/>
         <p
           className='InLenLabel'
-          id='InLenLabel'>0/512</p>
+          id='InLenLabel'>0/2048</p>
         <button 
           className='sendButt' 
           id='sendButt'
@@ -305,7 +311,7 @@ function App() {
           <select className='LangPrefSelector'
             id='InputLangSelector'
             defaultValue={config.Languages.DefInLang}>
-            {LanguageOptions.map(languageOption =>
+            {Languages.map(languageOption =>
               <option 
                 key={languageOption.tag} 
                 value={languageOption.full}
@@ -316,7 +322,7 @@ function App() {
           <select className='LangPrefSelector'
             id='OutputLangSelector'
             defaultValue={config.Languages.DefOutLang}>
-            {LanguageOptions.map(languageOption =>
+            {Languages.map(languageOption =>
               <option 
                 key={languageOption.tag} 
                 value={languageOption.full}
@@ -341,6 +347,7 @@ function App() {
   return (
     <div className="App">
       <title>Dicker.translate</title>
+      <audio id='ReadyPlayer' src={NotifSound}></audio>
       <div className="TopBar">
         <div className='LeftPart'>42</div>
         <div className='CentralPart'>

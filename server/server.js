@@ -69,6 +69,9 @@ var isAvailable = false;
 var ollama = null;
 var models = [];
 
+const LangLocation = './Files/LanguagesList.json';
+var Languages = JSON.parse(fs.readFileSync(LangLocation));
+
 checkOllamaIP(Config.Connection.IP, Config.Connection.Port)?.then(res => {
   isAvailable = res;
   console.log(`ollama available: ${res}`);
@@ -118,6 +121,10 @@ io.on('connection', function (socket) {
   //Sending config to client
   socket.on('getConfig', (callback) => {
     callback(Config);
+  });
+
+  socket.on('getLangs', (callback) => {
+    callback(Languages);
   });
 
   //Sending chosen locale to client
