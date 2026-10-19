@@ -1,0 +1,44 @@
+services:
+  frontend:
+    build:
+      context: .
+      dockerfile: dockerfile
+    container_name: Dicker-UI
+    restart: unless-stopped
+    ports:
+      - "3001:3001"
+    depends_on: 
+      - backend
+    
+  backend:
+    build:
+      context: ./server
+      dockerfile: dockerfile
+    container_name: Dicker-server
+    restart: unless-stopped
+    ports:
+      - "5000:5000"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    depends_on:
+      - ollama
+
+  ollama:
+    image: ollama/ollama
+    container_name: ollama
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama:/root/.ollama
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+    restart: unless-stopped
+
+volumes:
+  ollama:
+    external: true
